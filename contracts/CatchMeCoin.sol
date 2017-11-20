@@ -117,15 +117,19 @@ contract ERC20Token is ERC20Interface{
 contract CatchMeCoin is ERC20Token {
 
     // Token symbol
-    string public symbol = CMT;
+    string public symbol = 'CMT';
 
     // Name of token
     string public name = 'Catch Me Token';
 
     // Decimals of token
     uint8 public decimals = 9;
-    uint256 constant unit = 10**decimals;
-    uint256 constant perSecond = 10**6;
+
+    // smallest unit
+    uint256 public constant unit = 10**decimals;
+
+    // tokens awarded per second of ownership
+    uint256 public constant perSecond = 10**6;
 
     mapping(address => uint256) public cumulativeTime;
 
@@ -134,7 +138,9 @@ contract CatchMeCoin is ERC20Token {
     address public owner;
 
     uint256 private lastTap;
+
     mapping(address => bool) private coinOwner;
+
     uint256 private internalSupply;
 
 
