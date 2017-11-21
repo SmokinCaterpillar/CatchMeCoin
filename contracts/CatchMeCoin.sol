@@ -137,6 +137,8 @@ contract CatchMeCoin is ERC20Token {
     // optional comments people can leave
     mapping(uint256 => string) public badassComments;
 
+    // helper mappings to store usernames
+    // and make them more difficult to link to addresses
     mapping(uint256 => uint256) private badassIDs;
     mapping(uint256 => string) private IDsToUsernames;
 
@@ -199,7 +201,9 @@ contract CatchMeCoin is ERC20Token {
 
     // taps an opponent and reassigns the coin and awards tokens
     // in case target was the previous coin owner
-    function tap(address target, string badassComment, string username) public payable returns(bool){
+    function tap(address target,
+                 string badassComment,
+                 string badassUsername) public payable returns(bool){
         if (coinOwners[target]){
             uint256 awardedTokens;
             uint256 timeDelta = now - lastTap;
@@ -209,7 +213,7 @@ contract CatchMeCoin is ERC20Token {
 
             // store badass comment
             if (bytes(badassComment).length > 0){
-                addComment(badassComment, username);
+                addComment(badassComment, badassUsername);
             }
             // remember the taps
             taps += 1;
@@ -225,7 +229,7 @@ contract CatchMeCoin is ERC20Token {
             coinOwners[target] = false;
             coinOwners[msg.sender] = true;
 
-            Transfer(this, target, awardedTokens);
+            //Transfer(this, target, awardedTokens);
 
             return true;
         }
@@ -234,13 +238,22 @@ contract CatchMeCoin is ERC20Token {
 
     // tap without comment
     function tap(address target) public payable returns(bool){
-        return tap(target, "", "");
+        return tap(target, "");
+    }
+
+    // tap without username
+    function tap(address target, string badassComment) public payable returns(bool){
+        return tap(target, badassComment, "");
     }
 
     function whatsMyUsername() public constant returns(string username){
         uint256 userID = addressesToIDs[msg.sender];
         username = IDsToUsernames[userID];
         return username;
+    }
+
+    function usernameTaken(string username) public constant returns(bool){
+        return usernamesTaken[username];
     }
 
     function badassUsername(uint256 commentID) public constant returns(string username){
@@ -257,6 +270,7 @@ contract CatchMeCoin is ERC20Token {
             // if new username is provided check that user does not
             // exist, yet;
             require(!usernamesTaken[username]);
+            require(addressesToIDs[msg.sender] == 0);
 
             users += 1;
             userID = users;
@@ -265,7 +279,6 @@ contract CatchMeCoin is ERC20Token {
             IDsToUsernames[userID] = username;
             usernamesTaken[username] = true;
         } else {
-
             userID = addressesToIDs[msg.sender];
             // user must exist
             require(userID > 0);
