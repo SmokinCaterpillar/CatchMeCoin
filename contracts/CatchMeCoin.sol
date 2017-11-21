@@ -51,10 +51,10 @@ contract ERC20Interface {
 contract ERC20Token is ERC20Interface{
 
     // account balances
-    mapping(address => uint256) balances;
+    mapping(address => uint256) internal balances;
 
     // Owner of account approves the transfer of amount to another account
-    mapping(address => mapping (address => uint256)) allowed;
+    mapping(address => mapping (address => uint256)) internal allowed;
 
     // Function to access acount balances
     function balanceOf(address _owner) public constant returns (uint256) {
@@ -120,38 +120,51 @@ contract CatchMeCoin is ERC20Token {
     string public symbol = 'CMT';
 
     // Name of token
-    string public name = 'Catch Me Token';
+    string public name = 'Catch Me Tokens';
 
     // Decimals of token
     uint8 public decimals = 9;
 
     // smallest unit
-    uint256 public constant unit = 10**decimals;
+    uint256 public constant unit = 10**9;
 
     // tokens awarded per second of ownership
     uint256 public constant perSecond = 10**6;
 
+    // cumulative time each address was owner of the coin
     mapping(address => uint256) public cumulativeTime;
 
+    // optional comments people can leave
     mapping(uint256 => string) public badassComments;
+
+    // number of comments
+    uint256 public comments;
+
+    // number of total taps
     uint256 public taps;
+
+    // owner of contract
     address public owner;
 
+    // time of last tap
     uint256 private lastTap;
 
-    mapping(address => bool) private coinOwner;
+    // contains the coin owners
+    mapping(address => bool) private coinOwners;
 
+    // total supply of tokens
+    // increased with every tap
     uint256 private internalSupply;
 
 
     function CatchMeCoin(){
         owner = msg.sender;
         lastTap = now;
-        coinOwner[owner] = true;
+        coinOwners[owner] = true;
         // dev supply
         internalSupply = 3600 * unit;
         balances[owner] = internalSupply;
-        taps = 0;
+        Transfer(this, owner, internalSupply);
     }
 
     function () public payable{
@@ -168,35 +181,49 @@ contract CatchMeCoin is ERC20Token {
         return internalSupply;
     }
 
+    function amITheOne() public constant returns(bool){
+        return coinOwners[msg.sender];
+    }
+
     // taps an opponent and reassigns the coin and awards tokens
     // in case target was the previous coin owner
     function tap(address target, string badassComment) public payable returns(bool){
-        bytes memory bcomment = bytes(badasComment);
         uint256 awardedTokens;
         uint256 timeDelta = now - lastTap;
 
-        if (coinOwner[target]){
+        // you cannot tap yourself
+        require(!coinOwners[msg.sender]);
+
+        if (coinOwners[target]){
             // store badass comment
-            if (bcomment.lenght > 0){
-                badassComments[taps] = badassComment;
+            if (bytes(badassComment).length > 0){
+                badassComments[comments] = badassComment;
+                comments += 1;
             }
             // remember the taps
             taps += 1;
             // award tokens
-            awardedToknes = timeDelta * perSecond;
+            awardedTokens = timeDelta * perSecond;
             internalSupply += awardedTokens;
             balances[target] += awardedTokens;
             // keep a cumulative sum of time target owned the coin
             cumulativeTime[target] += timeDelta;
             // now we have a new last tap
             lastTap = now;
-            // change ownership
-            coinOwner[target] = false;
-            coinOwner[msg.sender] = true;
+            // change ownership of coin
+            coinOwners[target] = false;
+            coinOwners[msg.sender] = true;
+
+            Transfer(this, target, awardedTokens);
 
             return true;
         }
         return false;
+    }
+
+    // tap without comment
+    function tap(address target) public payable returns(bool){
+        return tap(target, "");
     }
 
 }
