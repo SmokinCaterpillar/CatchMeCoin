@@ -111,14 +111,14 @@ def test_tap(chain, accounts):
 
 
     # tapping the wrong person
-    chain.wait.for_receipt(cm_coin.transact({'from':accounts[2]}).tap(accounts[0], 'huhu'))
+    chain.wait.for_receipt(cm_coin.transact({'from':accounts[2]}).tap(accounts[0], 'huhu', 'acc2'))
 
     assert cm_coin.call().taps() == 1
     assert cm_coin.call().comments() == 0
 
 
     # tapping with comment
-    chain.wait.for_receipt(cm_coin.transact({'from':accounts[2]}).tap(accounts[1], 'huhu'))
+    chain.wait.for_receipt(cm_coin.transact({'from':accounts[2]}).tap(accounts[1], 'huhu', 'acc2'))
 
     assert cm_coin.call().balanceOf(accounts[1]) > 0
 
@@ -142,11 +142,11 @@ def test_tap(chain, accounts):
     assert cm_coin.call().taps() == 2
     assert cm_coin.call().comments() == 1
 
-    assert cm_coin.call().badassComments(0) == 'huhu'
+    assert cm_coin.call().badassComments(1) == 'huhu'
 
 
     # tapping with comment
-    chain.wait.for_receipt(cm_coin.transact({'from':accounts[3]}).tap(accounts[2], 'hahu'))
+    chain.wait.for_receipt(cm_coin.transact({'from':accounts[3]}).tap(accounts[2], 'hahu', 'acc3'))
 
     assert cm_coin.call().balanceOf(accounts[2]) > 0
 
@@ -175,5 +175,8 @@ def test_tap(chain, accounts):
     assert cm_coin.call().taps() == 3
     assert cm_coin.call().comments() == 2
 
-    assert cm_coin.call().badassComments(0) == 'huhu'
-    assert cm_coin.call().badassComments(1) == 'hahu'
+    assert cm_coin.call().badassComments(1) == 'huhu'
+    assert cm_coin.call().badassComments(2) == 'hahu'
+
+    assert cm_coin.call().badassUsername(1) == 'acc2'
+    assert cm_coin.call().badassUsername(2) == 'acc3'

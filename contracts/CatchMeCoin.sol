@@ -137,6 +137,18 @@ contract CatchMeCoin is ERC20Token {
     // optional comments people can leave
     mapping(uint256 => string) public badassComments;
 
+    mapping(uint256 => uint256) private badassIDs;
+    mapping(uint256 => string) private IDsToUsernames;
+
+    // logs if username is taken
+    mapping(string => bool) private usernamesTaken;
+
+    // maps addresses to usernames
+    mapping(address => uint256) private addressesToIDs;
+
+    // number or registered users
+    uint256 private users;
+
     // number of comments
     uint256 public comments;
 
@@ -187,18 +199,17 @@ contract CatchMeCoin is ERC20Token {
 
     // taps an opponent and reassigns the coin and awards tokens
     // in case target was the previous coin owner
-    function tap(address target, string badassComment) public payable returns(bool){
-        uint256 awardedTokens;
-        uint256 timeDelta = now - lastTap;
-
-        // you cannot tap yourself
-        require(!coinOwners[msg.sender]);
-
+    function tap(address target, string badassComment, string username) public payable returns(bool){
         if (coinOwners[target]){
+            uint256 awardedTokens;
+            uint256 timeDelta = now - lastTap;
+
+            // you cannot tap yourself
+            require(target != msg.sender);
+
             // store badass comment
             if (bytes(badassComment).length > 0){
-                badassComments[comments] = badassComment;
-                comments += 1;
+                addComment(badassComment, username);
             }
             // remember the taps
             taps += 1;
@@ -223,7 +234,49 @@ contract CatchMeCoin is ERC20Token {
 
     // tap without comment
     function tap(address target) public payable returns(bool){
-        return tap(target, "");
+        return tap(target, "", "");
+    }
+
+    function whatsMyUsername() public constant returns(string username){
+        uint256 userID = addressesToIDs[msg.sender];
+        username = IDsToUsernames[userID];
+        return username;
+    }
+
+    function badassUsername(uint256 commentID) public constant returns(string username){
+        uint256 userID = badassIDs[commentID];
+        username = IDsToUsernames[userID];
+        return username;
+    }
+
+    function addComment(string comment, string username) private {
+        uint256 userID;
+        uint256 commentID;
+
+        if (bytes(username).length > 0){
+            // if new username is provided check that user does not
+            // exist, yet;
+            require(!usernamesTaken[username]);
+
+            users += 1;
+            userID = users;
+
+            addressesToIDs[msg.sender] = userID;
+            IDsToUsernames[userID] = username;
+            usernamesTaken[username] = true;
+        } else {
+
+            userID = addressesToIDs[msg.sender];
+            // user must exist
+            require(userID > 0);
+        }
+
+        comments += 1;
+        commentID = comments;
+        // comment 0 is empty
+        badassComments[commentID] = comment;
+        badassIDs[commentID] = userID;
+
     }
 
 }
